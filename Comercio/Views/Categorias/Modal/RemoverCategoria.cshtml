@@ -1,0 +1,27 @@
+﻿<div class="modal fade" id="modalRemoverCategoria" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h5 class="modal-title">Remover</h5>
+            </div>
+            <form id="formRemoverCategoria">
+                <div class="modal-body">
+                    <div id="categoriaRemoverErros" class="alert alert-danger alert-dismissible" role="alert">
+                        <button type="button" class="close" onclick="limparMensagens()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <span id="mensagemCategoriaRemoverErros"></span>
+                    </div>
+
+                    Deseja realmente remover a categoria <b id="descricaoRemover"></b>?
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Não</button>
+                    <button type="button" class="btn btn-danger" onclick="remover()">Sim</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

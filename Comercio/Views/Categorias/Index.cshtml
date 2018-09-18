@@ -1,0 +1,299 @@
+﻿@{
+    ViewBag.Title = "Consultar Categorias";
+}
+
+<div class="container" style="margin-top: 30px">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            Categorias
+        </div>
+        <div class="panel-body">
+            <div id="categoriasInfo" class="alert alert-success alert-dismissible" role="alert">
+                <button type="button" class="close" onclick="limparMensagens()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <span id="mensagemCategoriasInfo"></span>
+            </div>
+
+            <div class="form-group">
+                <h4><span class="glyphicon glyphicon-search"></span>  Filtro</h4>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label>Descrição</label>
+                                <div class="form-group">
+                                    <input id="descricaoFiltro" class="form-control" type="text" style="max-width:none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <input id="btnBuscar" class="btn btn-primary" type="button" value="Buscar" />
+                        <input id="btnLimpar" class="btn btn-warning" type="button" onclick="limparFiltro()" value="Limpar Filtro" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <button type="button" class="btn btn-success" onclick="novo()" data-toggle="modal" data-target="#modalDadosCategoria">
+                    Novo
+                    <span class="gliphicon glyphicon-plus"></span>
+                </button>
+            </div>
+
+            <table class="table">
+                <thead style="background-color:#222; color:white">
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Descrição</th>
+                        <th scope="col" class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="dadosTabela"></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-center">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-default" onclick="voltarPrimeiraPagina()">«</button>
+                                <button type="button" class="btn btn-sm btn-default" onclick="voltarPaginacao()">‹</button>
+                                <input id="pagina" type="text" class="btn btn-sm btn-default" value="1/1" />
+                                <button type="button" class="btn btn-sm btn-default" onclick="avancarPaginacao()">›</button>
+                                <button type="button" class="btn btn-sm btn-default" onclick="avancarUltimaPagina()">»</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+
+        </div>
+    </div>
+
+    @Html.Partial("~/Views/Categorias/Modal/DadosCategoria.cshtml")
+    @Html.Partial("~/Views/Categorias/Modal/RemoverCategoria.cshtml")
+</div>
+
+<script type="text/javascript">
+    var cadastradas;
+    var categoria;
+
+    var filtro = {
+        descricao: ""
+    }
+
+    var paginacao = {
+        inicio: 0,
+        limite: 5
+    }
+
+    var paginaAtual = 1;
+    var ultimaPagina = 1;
+
+    $(document).ready(function () {
+
+        $(document)
+            .ajaxStart(function () {
+                $("#loading").modal('toggle');
+            })
+            .ajaxStop(function () {
+                $("#loading").modal('toggle');
+            });
+
+        filtro.paginacao = paginacao;
+
+        $("#categoriasInfo").hide();
+        $("#categoriaDadosErros").hide();
+        $("#categoriaRemoverErros").hide();
+
+        consultar(filtro);
+    });
+
+    $("#btnBuscar").click(function () {
+        filtro.descricao = $("#descricaoFiltro").val();
+        $("#loading").modal('toggle');
+
+        consultar(filtro);
+    });
+
+    function novo() {
+        limparMensagens();
+        categoria = {};
+
+        $("#descricao").val("");
+    }
+
+    function limparFiltro() {
+        filtro.descricao = "";
+        $("#descricaoFiltro").val("");
+
+        consultar();
+    }
+
+    function limparMensagens() {
+        $("#mensagemCategoriasInfo").text("");
+        $("#categoriasInfo").hide();
+
+        $("#mensagemCategoriaDadosErros").text("");
+        $("#categoriaDadosErros").hide();
+    }
+
+    function salvar() {
+        categoria.descricao = $("#descricao").val();
+
+        if (!categoria.idCategoria)
+            cadastrar(categoria);
+        else
+            atualizar(categoria);
+    }
+
+    function cadastrar(categoria) {
+        $.post("/Categorias/Cadastrar", categoria)
+            .then(function (data) {
+                console.log(data);
+                $("#mensagemCategoriasInfo").text(data.message);
+                $("#categoriasInfo").show();
+
+                $("#modalDadosCategoria").modal('toggle');
+
+                consultar();
+            })
+            .catch(function (erros) {
+                if (Array.isArray(erros.responseJSON)) {
+                    for (var erro in erros.responseJSON) {
+                        $("#mensagemCategoriaDadosErros").append('<span> -' + erros.responseJSON[erro].ErrorMessage + '<br/>');
+                    }
+                } else {
+                    $("#mensagemCategoriaDadosErros").append('<span>' + erros.responseJSON.ErrorMessage);
+                }
+
+                $("#categoriaDadosErros").show();
+            });
+    }
+
+    function atualizar(categoria) {
+        $.post("/Categorias/Atualizar", categoria)
+            .then(function (data) {
+                $("#mensagemCategoriasInfo").text(data.message);
+                $("#categoriasInfo").show();
+
+                $("#modalDadosCategoria").modal('toggle');
+
+                consultar();
+            })
+            .catch(function (erros) {
+                if (Array.isArray(erros.responseJSON)) {
+                    for (var erro in erros.responseJSON) {
+                        $("#mensagemCategoriaDadosErros").append('<span> -' + erros.responseJSON[erro].ErrorMessage + '<br/>');
+                    }
+                } else {
+                    $("#mensagemCategoriaDadosErros").append('<span>' + erros.responseJSON.ErrorMessage);
+                }
+
+                $("#categoriaDadosErros").show();
+            });
+    }
+
+    function remover() {
+        $.post("/Categorias/Remover", { idCategoria: categoria.idCategoria })
+            .then(function (data) {
+                $("#mensagemCategoriasInfo").text(data.message);
+                $("#categoriasInfo").show();
+
+                $("#modalRemoverCategoria").modal('toggle');
+
+                consultar();
+            })
+            .catch(function (erros) {
+                if (Array.isArray(erros.responseJSON)) {
+                    for (var erro in erros.responseJSON) {
+                        $("#mensagemCategoriaRemoverErros").append('<span> -' + erros.responseJSON[erro].ErrorMessage + '<br/>');
+                    }
+                } else {
+                    $("#mensagemCategoriaRemoverErros").append('<span>' + erros.responseJSON.ErrorMessage);
+                }
+
+                $("#categoriaRemoverErros").show();
+            });
+    }
+
+    function consultar() {
+
+        $.post("/Categorias/Cadastradas", filtro)
+            .done(function (data) {
+                filtro.paginacao = data.paginacao;
+
+                ultimaPagina = Math.ceil(filtro.paginacao.TotalRegistros / filtro.paginacao.Limite);
+
+                $('#pagina').val(paginaAtual + "/" + ultimaPagina);
+
+                if (data.categorias.length > 0) {
+                    cadastradas = data.categorias;
+
+                    $('#dadosTabela').replaceWith('<tbody id="dadosTabela">');
+
+                    $.each(data.categorias, function (key, item) {
+                        $('<tr id="trItem' + key + '">').appendTo('#dadosTabela');
+
+                        $.each(Object.values(item), function (key2, item2) {
+                            $('<td>', { text: item2 }).appendTo('#trItem' + key);
+                        });
+
+                        $('<td class="text-center">'
+                            + ' <button class="btn btn-sm btn-default" onClick="selecionar(' + cadastradas.indexOf(item) + ')" data-toggle="modal" data-target="#modalDadosCategoria">'
+                            + '<span class="glyphicon glyphicon-pencil"></span>'
+                            + '</button>'
+                            + '<button class="btn btn-sm btn-danger" style="margin-left:5px" onClick="selecionar(' + cadastradas.indexOf(item) + ')" data-toggle="modal" data-target="#modalRemoverCategoria">'
+                            + '<span class="glyphicon glyphicon-trash"></span>'
+                            + '</button>')
+                            .appendTo('#trItem' + key);
+                    });
+                }
+            });
+    }
+
+    function selecionar(index) {
+        categoria = jQuery.extend(true, {}, cadastradas[index]);
+
+        $("#descricao").val(categoria.descricao);
+        $("#descricaoRemover").text(categoria.descricao);
+    }
+
+    function voltarPrimeiraPagina() {
+        if (paginaAtual != 1) {
+            paginaAtual = 1;
+            filtro.paginacao.Inicio = 0;
+            $('#pagina').val(paginaAtual + "/" + ultimaPagina);
+
+            consultar();
+        }
+    }
+
+    function voltarPaginacao() {
+        if (paginaAtual > 1) {
+            paginaAtual--;
+            filtro.paginacao.Inicio--;
+            $('#pagina').val(paginaAtual + "/" + ultimaPagina);
+
+            consultar();
+        }
+    }
+
+    function avancarPaginacao() {
+        if (paginaAtual < ultimaPagina) {
+            paginaAtual++;
+            filtro.paginacao.Inicio++;
+            $('#pagina').val(paginaAtual + "/" + ultimaPagina);
+
+            consultar();
+        }
+    }
+
+    function avancarUltimaPagina() {
+        if (paginaAtual != ultimaPagina) {
+            paginaAtual = ultimaPagina;
+            filtro.paginacao.Inicio = ultimaPagina - 1;
+            $('#pagina').val(paginaAtual + "/" + ultimaPagina);
+
+            consultar();
+        }
+    }
+</script>
